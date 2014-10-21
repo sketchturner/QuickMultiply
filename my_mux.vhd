@@ -17,8 +17,8 @@ end my_mux;
 architecture my_mux of my_mux is
 begin
 	with sel select
-		result <=	(32 downto 0 => '0')			when "00",
-					"0"&dataA	when "01",
-					dataA&"0"	when "10",
-					data3A		when "11";
+		result <=	(DATA_WIDTH downto 0 => '0')	when "00",
+					"0"&dataA						when "01",
+					dataA&"0"						when "10",
+					data3A							when "11";
 end my_mux;

@@ -5,7 +5,7 @@ use ieee.std_logic_arith.all;
 
 entity qm32 is
 	generic (
-			constant DATA_WIDTH: integer:= 32
+			constant DATA_WIDTH: integer:= 8
 	);
 	port 
 	(
@@ -16,28 +16,12 @@ entity qm32 is
 end entity;
 
 architecture qm32 of qm32 is
-type mux_results_type	is array (15 downto 0) of std_logic_vector(DATA_WIDTH downto 0);
-type sum_first_type		is array (7 downto 0) of std_logic_vector(35 downto 0);
-type sum_second_type	is array (3 downto 0) of std_logic_vector(39 downto 0);
-signal s2A: std_logic_vector(32 downto 0);
+type mux_results_type	is array (DATA_WIDTH/2-1 downto 0) of std_logic_vector(DATA_WIDTH downto 0);
+type tmp_array is array(DATA_WIDTH/2-1 downto 0) of std_logic_vector(DATA_WIDTH*2-2 downto 0);
 signal s3A: std_logic_vector(DATA_WIDTH downto 0);
 signal r:	mux_results_type;
-signal sum1:	sum_first_type;
-signal sum2:	sum_second_type;
-signal sum3_0: std_logic_vector(47 downto 0);
-signal sum3_1: std_logic_vector(47 downto 0);
+signal tmp: tmp_array;
 
---component lpm_mux1
---	PORT
---	(
---		data0x	: IN STD_LOGIC_VECTOR (33 DOWNTO 0);
---		data1x	: IN STD_LOGIC_VECTOR (33 DOWNTO 0);
---		data2x	: IN STD_LOGIC_VECTOR (33 DOWNTO 0);
---		data3x	: IN STD_LOGIC_VECTOR (33 DOWNTO 0);
---		sel		: IN STD_LOGIC_VECTOR (1 DOWNTO 0);
---		result	: OUT STD_LOGIC_VECTOR (33 DOWNTO 0)
---	);
---end component;
 component my_mux
 	generic (
 			DATA_WIDTH: integer:= 32
@@ -51,33 +35,36 @@ component my_mux
 	);
 end component;
 begin
-	s3A <= ("0"&A) + (A&"");
-	
+	s3A <= ("0"&A) + (A&"0");
 	gen_mux:
-		for i in 0 to 15 generate
+		for i in 0 to DATA_WIDTH/2-1 generate
 			muxI: my_mux generic map (DATA_WIDTH => DATA_WIDTH)
 				port map (
---				"0000000000000000000000000000000000",
---				"0"&A,
---				"0"&A&"",
 				A,
 				s3A,
 				B(i+i+1 downto i+i),
 				r(i));
 	end generate gen_mux;
-	
---	gen_sum_first:
---		for i in 0 to 7 generate
---			sum1i: sum1(i) <= ("00"&r(i+i)) + (r(i+i+1)&"0");
---	end generate gen_sum_first;
---	
---	gen_sum_second:
---		for i in 0 to 3 generate
---			sum2i: sum2(i) <= ("00000"&sum1(i+i)) + (sum1(i+i+1)&"0000");
---	end generate gen_sum_second;
---	
---	sum3_0 <= ("000000000"&sum2(0)) + (sum2(1)&"00000000");
---	sum3_1 <= ("000000000"&sum2(2)) + (sum2(3)&"00000000");
---	V <= ("00000000000000000"&sum3_0) + (sum3_1&"0000000000000000");
-	V <= ("0000000000000000000000000000000"&r(0))+("00000000000000000000000000000"&r(1)&"0")+("000000000000000000000000000"&r(2)&"0000")+("0000000000000000000000000"&r(3)&"000000")+("00000000000000000000000"&r(4)&"00000000")+("000000000000000000000"&r(5)&"0000000000")+("0000000000000000000"&r(6)&"000000000000")+("00000000000000000"&r(7)&"00000000000000")+("000000000000000"&r(8)&"0000000000000000")+("0000000000000"&r(9)&"000000000000000000")+("00000000000"&r(10)&"00000000000000000000")+("000000000"&r(11)&"0000000000000000000000")+("0000000"&r(12)&"000000000000000000000000")+("00000"&r(13)&"00000000000000000000000000")+("00"&r(14)&"0000000000000000000000000000")+(r(15)&"000000000000000000000000000000");
+-----------------------------
+--      for 32bit data     --
+-----------------------------
+--	V <= r(0)+(r(1)&"00")+(r(2)&"0000")+(r(3)&"000000")+(r(4)&"00000000")+(r(5)&"0000000000")+(r(6)&"000000000000")+(r(7)&"00000000000000")+(r(8)&"0000000000000000")+(r(9)&"000000000000000000")+(r(10)&"00000000000000000000")+(r(11)&"0000000000000000000000")+(r(12)&"000000000000000000000000")+(r(13)&"00000000000000000000000000")+(r(14)&"0000000000000000000000000000")+("0"&r(15)&"000000000000000000000000000000");
+-----------------------------
+--      for other data     --
+-----------------------------
+	gen_sum:
+		for i in 0 to DATA_WIDTH/2-1 generate
+		sum0:
+			if i=0 generate
+				tmp(i) <= ((DATA_WIDTH-3 downto 0 => '0')&r(i))+(r(i+1)&((i+1)*2-1 downto 0 => '0'));
+			end generate;
+		sumI:
+			if i>0 and i<DATA_WIDTH/2-1 generate
+				tmp(i) <= tmp(i-1)+(r(i+1)&((i+1)*2-1 downto 0 => '0'));
+			end generate;
+		sumN:
+			if i=DATA_WIDTH/2-1 generate
+				V <= ("0"&tmp(i-1))+(r(i)&(DATA_WIDTH-3 downto 0 => '0'));
+			end generate;
+	end generate gen_sum;
 end;
