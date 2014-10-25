@@ -1,0 +1,19 @@
+PARAMETERS 
+(
+	DATA_WIDTH = 4
+);
+SUBDESIGN my_amux
+(
+	dataA[DATA_WIDTH-1..0]	: INPUT;
+	data3A[DATA_WIDTH+1..0]	: INPUT;
+	sel[1..0]				: INPUT;
+	result[DATA_WIDTH+1..0]	: OUTPUT;
+)
+BEGIN
+	CASE sel[] IS 
+		WHEN H"0" => result[]=B"0";
+		WHEN H"1" => result[]=(B"00",dataA[]);
+		WHEN H"2" => result[]=(B"0",dataA[],B"0");
+		WHEN H"3" => result[]=data3A[];
+	END CASE;
+END;
